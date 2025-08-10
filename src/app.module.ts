@@ -5,6 +5,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
 import { AddressModule } from './address/address.module';
+import { TruckModule } from './truck/truck.module';
 
 @Module({
   imports: [
@@ -14,6 +15,7 @@ import { AddressModule } from './address/address.module';
     MongooseModule.forRoot(process.env.MONGODB_URI!),
     AuthModule,
     AddressModule,
+    TruckModule,
   ],
   controllers: [AppController],
   providers: [AppService],
