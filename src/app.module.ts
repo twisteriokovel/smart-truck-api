@@ -6,6 +6,8 @@ import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
 import { AddressModule } from './address/address.module';
 import { TruckModule } from './truck/truck.module';
+import { OrderModule } from './order/order.module';
+import { TripModule } from './trip/trip.module';
 
 @Module({
   imports: [
@@ -16,6 +18,8 @@ import { TruckModule } from './truck/truck.module';
     AuthModule,
     AddressModule,
     TruckModule,
+    OrderModule,
+    TripModule,
   ],
   controllers: [AppController],
   providers: [AppService],
