@@ -59,9 +59,7 @@ export class TripService {
     }
 
     if (createTripDto.cargoSize > truck.maxPallets) {
-      throw new BadRequestException(
-        'Trip cargo size exceeds truck capacity',
-      );
+      throw new BadRequestException('Trip cargo size exceeds truck capacity');
     }
 
     const conflictingTrip = await this.tripModel
@@ -69,8 +67,12 @@ export class TripService {
         truckId: createTripDto.truckId,
         status: { $in: [TripStatus.NEW, TripStatus.IN_PROGRESS] },
         startTime: {
-          $lte: new Date(createTripDto.startTime.getTime() + 24 * 60 * 60 * 1000),
-          $gte: new Date(createTripDto.startTime.getTime() - 24 * 60 * 60 * 1000),
+          $lte: new Date(
+            createTripDto.startTime.getTime() + 24 * 60 * 60 * 1000,
+          ),
+          $gte: new Date(
+            createTripDto.startTime.getTime() - 24 * 60 * 60 * 1000,
+          ),
         },
       })
       .exec();
@@ -89,7 +91,7 @@ export class TripService {
     const savedTrip = await trip.save();
 
     order.remainingCargo -= createTripDto.cargoSize;
-    order.trips.push(savedTrip._id);
+    order.trips.push(savedTrip._id as Types.ObjectId);
     await this.checkAndUpdateOrderStatus(order);
     await order.save();
 
@@ -154,7 +156,10 @@ export class TripService {
     return this.transformToResponse(updatedTrip);
   }
 
-  async finish(id: string, finishTripDto: IFinishTripDto): Promise<ITripResponse> {
+  async finish(
+    id: string,
+    finishTripDto: IFinishTripDto,
+  ): Promise<ITripResponse> {
     const trip = await this.tripModel.findById(id).exec();
     if (!trip) {
       throw new NotFoundException('Trip not found');
@@ -194,7 +199,9 @@ export class TripService {
     const order = await this.orderModel.findById(trip.orderId).exec();
     if (order) {
       order.remainingCargo += trip.cargoSize;
-      order.trips = order.trips.filter(tripId => !tripId.equals(trip._id));
+      order.trips = order.trips.filter(
+        (tripId) => !tripId.equals(trip._id as Types.ObjectId),
+      );
       await this.checkAndUpdateOrderStatus(order);
       await order.save();
     }
@@ -225,7 +232,8 @@ export class TripService {
     if (updateTripDto.cargoSize !== undefined) {
       const order = await this.orderModel.findById(trip.orderId).exec();
       if (order) {
-        const newRemainingCargo = order.remainingCargo + trip.cargoSize - updateTripDto.cargoSize;
+        const newRemainingCargo =
+          order.remainingCargo + trip.cargoSize - updateTripDto.cargoSize;
         if (newRemainingCargo < 0) {
           throw new BadRequestException(
             'Updated cargo size would exceed available cargo in order',
@@ -271,7 +279,9 @@ export class TripService {
     const order = await this.orderModel.findById(trip.orderId).exec();
     if (order) {
       order.remainingCargo += trip.cargoSize;
-      order.trips = order.trips.filter(tripId => !tripId.equals(trip._id));
+      order.trips = order.trips.filter(
+        (tripId) => !tripId.equals(trip._id as Types.ObjectId),
+      );
       await this.checkAndUpdateOrderStatus(order);
       await order.save();
     }
@@ -283,11 +293,17 @@ export class TripService {
     const trips = await this.tripModel.find({ orderId: order._id }).exec();
 
     if (order.remainingCargo === 0 && trips.length > 0) {
-      const hasInProgressTrips = trips.some(trip => trip.status === TripStatus.IN_PROGRESS);
-      const allTripsCompleted = trips.every(trip => 
-        trip.status === TripStatus.DONE || trip.status === TripStatus.CANCELLED
+      const hasInProgressTrips = trips.some(
+        (trip) => trip.status === TripStatus.IN_PROGRESS,
       );
-      const hasCompletedTrips = trips.some(trip => trip.status === TripStatus.DONE);
+      const allTripsCompleted = trips.every(
+        (trip) =>
+          trip.status === TripStatus.DONE ||
+          trip.status === TripStatus.CANCELLED,
+      );
+      const hasCompletedTrips = trips.some(
+        (trip) => trip.status === TripStatus.DONE,
+      );
 
       if (hasInProgressTrips) {
         order.status = OrderStatus.IN_PROGRESS;
@@ -303,9 +319,7 @@ export class TripService {
     }
   }
 
-  private transformToResponse(
-    trip: TripDocument | TripLean,
-  ): ITripResponse {
+  private transformToResponse(trip: TripDocument | TripLean): ITripResponse {
     return {
       _id: (trip as TripLean)._id.toString(),
       orderId: trip.orderId.toString(),

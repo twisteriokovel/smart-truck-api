@@ -9,13 +9,18 @@ export class Order {
   @Prop({ required: true })
   cargoSize: number;
 
-  @Prop({ required: true, default: function() { return this.cargoSize; } })
+  @Prop({
+    required: true,
+    default: function (this: Order) {
+      return this.cargoSize;
+    },
+  })
   remainingCargo: number;
 
-  @Prop({ 
-    type: String, 
-    enum: Object.values(OrderStatus), 
-    default: OrderStatus.DRAFT 
+  @Prop({
+    type: String,
+    enum: Object.values(OrderStatus),
+    default: OrderStatus.DRAFT,
   })
   status: OrderStatus;
 

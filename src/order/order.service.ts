@@ -2,7 +2,6 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
-  ConflictException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
@@ -88,7 +87,9 @@ export class OrderService {
     }
 
     if (updateOrderDto.destinationAddressId !== undefined) {
-      order.destinationAddressId = new Types.ObjectId(updateOrderDto.destinationAddressId);
+      order.destinationAddressId = new Types.ObjectId(
+        updateOrderDto.destinationAddressId,
+      );
     }
 
     if (updateOrderDto.notes !== undefined) {
@@ -116,7 +117,7 @@ export class OrderService {
 
     await this.tripModel.updateMany(
       { orderId: order._id },
-      { status: TripStatus.CANCELLED }
+      { status: TripStatus.CANCELLED },
     );
 
     order.status = OrderStatus.CANCELLED;
@@ -152,11 +153,17 @@ export class OrderService {
     const trips = await this.tripModel.find({ orderId: order._id }).exec();
 
     if (order.remainingCargo === 0 && trips.length > 0) {
-      const hasInProgressTrips = trips.some(trip => trip.status === TripStatus.IN_PROGRESS);
-      const allTripsCompleted = trips.every(trip => 
-        trip.status === TripStatus.DONE || trip.status === TripStatus.CANCELLED
+      const hasInProgressTrips = trips.some(
+        (trip) => trip.status === TripStatus.IN_PROGRESS,
       );
-      const hasCompletedTrips = trips.some(trip => trip.status === TripStatus.DONE);
+      const allTripsCompleted = trips.every(
+        (trip) =>
+          trip.status === TripStatus.DONE ||
+          trip.status === TripStatus.CANCELLED,
+      );
+      const hasCompletedTrips = trips.some(
+        (trip) => trip.status === TripStatus.DONE,
+      );
 
       if (hasInProgressTrips) {
         order.status = OrderStatus.IN_PROGRESS;
@@ -182,7 +189,7 @@ export class OrderService {
       status: order.status,
       destinationAddressId: order.destinationAddressId.toString(),
       notes: order.notes || undefined,
-      trips: order.trips.map(trip => trip.toString()),
+      trips: order.trips.map((trip) => trip.toString()),
       createdAt: (order as OrderLean).createdAt,
       updatedAt: (order as OrderLean).updatedAt,
     };

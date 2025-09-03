@@ -15,10 +15,10 @@ export class Trip {
   @Prop({ required: true })
   cargoSize: number;
 
-  @Prop({ 
-    type: String, 
-    enum: Object.values(TripStatus), 
-    default: TripStatus.NEW 
+  @Prop({
+    type: String,
+    enum: Object.values(TripStatus),
+    default: TripStatus.NEW,
   })
   status: TripStatus;
 

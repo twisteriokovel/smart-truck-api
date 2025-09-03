@@ -24,9 +24,7 @@ export class TripController {
   constructor(private readonly tripService: TripService) {}
 
   @Post()
-  async create(
-    @Body() createTripDto: ITripDto,
-  ): Promise<ITripResponse> {
+  async create(@Body() createTripDto: ITripDto): Promise<ITripResponse> {
     return this.tripService.create(createTripDto);
   }
 
@@ -36,7 +34,9 @@ export class TripController {
   }
 
   @Get('order/:orderId')
-  async findByOrder(@Param('orderId') orderId: string): Promise<ITripsListResponse> {
+  async findByOrder(
+    @Param('orderId') orderId: string,
+  ): Promise<ITripsListResponse> {
     return this.tripService.findByOrder(orderId);
   }
 
