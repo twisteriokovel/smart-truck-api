@@ -22,4 +22,6 @@ export interface IAddressResponse {
 export interface IAddressesListResponse {
   addresses: IAddressResponse[];
   total: number;
+  page: number;
+  pageSize: number;
 }

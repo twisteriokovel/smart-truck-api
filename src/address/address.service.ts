@@ -26,10 +26,17 @@ export class AddressService {
     return this.formatAddressResponse(savedAddress as AddressDocument);
   }
 
-  async findAllAddresses(): Promise<IAddressesListResponse> {
+  async findAllAddresses(
+    page: number = 1,
+    pageSize: number = 10,
+  ): Promise<IAddressesListResponse> {
+    const skip = (page - 1) * pageSize;
+
     const addresses = await this.addressModel
       .find()
       .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(pageSize)
       .lean<AddressLean[]>()
       .exec();
 
@@ -40,6 +47,8 @@ export class AddressService {
         this.formatAddressResponse(address),
       ),
       total,
+      page,
+      pageSize,
     };
   }
 

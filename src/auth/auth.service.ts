@@ -62,4 +62,13 @@ export class AuthService {
     const { password, ...result } = savedUser.toObject();
     return result as unknown as IUserResponse;
   }
+
+  async getProfile(userId: string): Promise<IUserResponse> {
+    const user = await this.userModel.findById(userId).lean().exec();
+    if (!user) {
+      throw new UnauthorizedException('User not found');
+    }
+    const { password, ...result } = user;
+    return result as unknown as IUserResponse;
+  }
 }

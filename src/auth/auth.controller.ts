@@ -1,9 +1,24 @@
-import { Controller, Request, Post, UseGuards, Body } from '@nestjs/common';
+import {
+  Controller,
+  Request,
+  Post,
+  Get,
+  UseGuards,
+  Body,
+} from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { AuthService } from './auth.service';
 import { ILoginResponse, IUserResponse, ICreateUserDto } from 'src/models/auth';
 
-interface AuthenticatedRequest extends Request {
+interface JwtAuthenticatedRequest extends Request {
+  user: {
+    userId: string;
+    email: string;
+    role: string;
+  };
+}
+
+interface LocalAuthenticatedRequest extends Request {
   user: IUserResponse;
 }
 
@@ -13,7 +28,7 @@ export class AuthController {
 
   @UseGuards(AuthGuard('local'))
   @Post('login')
-  login(@Request() req: AuthenticatedRequest): Promise<ILoginResponse> {
+  login(@Request() req: LocalAuthenticatedRequest): Promise<ILoginResponse> {
     return this.authService.login(req.user);
   }
 
@@ -22,5 +37,13 @@ export class AuthController {
     @Body() createUserDto: ICreateUserDto,
   ): Promise<IUserResponse> {
     return this.authService.register(createUserDto);
+  }
+
+  @UseGuards(AuthGuard('jwt'))
+  @Get('profile')
+  async getProfile(
+    @Request() req: JwtAuthenticatedRequest,
+  ): Promise<IUserResponse> {
+    return this.authService.getProfile(req.user.userId);
   }
 }

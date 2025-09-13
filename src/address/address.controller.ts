@@ -3,10 +3,11 @@ import {
   Get,
   Post,
   Body,
-  Patch,
+  Put,
   Param,
   Delete,
   UseGuards,
+  Query,
 } from '@nestjs/common';
 import { AddressService } from './address.service';
 import { IAddressDto, IAddressResponse } from '../models/address';
@@ -23,8 +24,13 @@ export class AddressController {
   }
 
   @Get()
-  findAllAddresses() {
-    return this.addressService.findAllAddresses();
+  findAllAddresses(
+    @Query('page') page?: string,
+    @Query('pageSize') pageSize?: string,
+  ) {
+    const pageNum = page ? parseInt(page, 10) : 1;
+    const pageSizeNum = pageSize ? parseInt(pageSize, 10) : 10;
+    return this.addressService.findAllAddresses(pageNum, pageSizeNum);
   }
 
   @Get(':id')
@@ -32,8 +38,8 @@ export class AddressController {
     return this.addressService.findOneAddress(id);
   }
 
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateAddressDto: IAddressResponse) {
+  @Put(':id')
+  update(@Param('id') id: string, @Body() updateAddressDto: IAddressDto) {
     return this.addressService.update(id, updateAddressDto);
   }
 
