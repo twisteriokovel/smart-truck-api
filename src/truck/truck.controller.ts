@@ -3,10 +3,11 @@ import {
   Get,
   Post,
   Body,
-  Patch,
+  Put,
   Param,
   Delete,
   UseGuards,
+  Query,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { TruckService } from './truck.service';
@@ -30,8 +31,13 @@ export class TruckController {
   }
 
   @Get()
-  async findAll(): Promise<ITrucksListResponse> {
-    return this.truckService.findAll();
+  async findAll(
+    @Query('page') page?: string,
+    @Query('pageSize') pageSize?: string,
+  ): Promise<ITrucksListResponse> {
+    const pageNum = page ? parseInt(page, 10) : 1;
+    const pageSizeNum = pageSize ? parseInt(pageSize, 10) : 10;
+    return this.truckService.findAll(pageNum, pageSizeNum);
   }
 
   @Get('plate/:plateNumber')
@@ -46,10 +52,10 @@ export class TruckController {
     return this.truckService.findOne(id);
   }
 
-  @Patch(':id')
+  @Put(':id')
   async update(
     @Param('id') id: string,
-    @Body() updateTruckDto: IUpdateTruckDto,
+    @Body() updateTruckDto: ICreateTruckDto,
   ): Promise<ITruckResponse> {
     return this.truckService.update(id, updateTruckDto);
   }

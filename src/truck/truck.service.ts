@@ -12,6 +12,7 @@ import {
   IUpdateTruckDto,
   ITrucksListResponse,
   EURO_PALLET,
+  DOOR_CLEARANCE,
 } from '../models/truck';
 
 type TruckLean = Truck & {
@@ -28,11 +29,13 @@ export class TruckService {
   ) {}
 
   private calculateMaxPallets(width: number, length: number): number {
+    const usableLength = length - DOOR_CLEARANCE;
+
     const palletsWidthwise = Math.floor(width / EURO_PALLET.width);
-    const palletsLengthwise = Math.floor(length / EURO_PALLET.length);
+    const palletsLengthwise = Math.floor(usableLength / EURO_PALLET.length);
 
     const palletsWidthwiseRotated = Math.floor(width / EURO_PALLET.length);
-    const palletsLengthwiseRotated = Math.floor(length / EURO_PALLET.width);
+    const palletsLengthwiseRotated = Math.floor(usableLength / EURO_PALLET.width);
 
     const orientation1 = palletsWidthwise * palletsLengthwise;
     const orientation2 = palletsWidthwiseRotated * palletsLengthwiseRotated;
@@ -68,10 +71,14 @@ export class TruckService {
     return this.transformToResponse(savedTruck);
   }
 
-  async findAll(): Promise<ITrucksListResponse> {
+  async findAll(page: number = 1, pageSize: number = 10): Promise<ITrucksListResponse> {
+    const skip = (page - 1) * pageSize;
+
     const trucks = await this.truckModel
       .find()
       .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(pageSize)
       .lean<TruckLean[]>()
       .exec();
 
@@ -80,6 +87,8 @@ export class TruckService {
     return {
       trucks: trucks.map((truck) => this.transformToResponse(truck)),
       total,
+      page,
+      pageSize,
     };
   }
 
@@ -101,7 +110,7 @@ export class TruckService {
 
   async update(
     id: string,
-    updateTruckDto: IUpdateTruckDto,
+    updateTruckDto: ICreateTruckDto,
   ): Promise<ITruckResponse> {
     if (updateTruckDto.plateNumber || updateTruckDto.vinCode) {
       const orConditions: Array<
@@ -132,22 +141,15 @@ export class TruckService {
       }
     }
 
-    const updateData: IUpdateTruckDto & { maxPallets?: number } = {
-      ...updateTruckDto,
-    };
-    if (
-      updateTruckDto.width !== undefined ||
-      updateTruckDto.length !== undefined
-    ) {
-      const currentTruck = await this.truckModel.findById(id).exec();
-      if (!currentTruck) {
-        throw new NotFoundException('Truck not found');
-      }
+    const maxPallets = this.calculateMaxPallets(
+      updateTruckDto.width,
+      updateTruckDto.length,
+    );
 
-      const newWidth = updateTruckDto.width ?? currentTruck.width;
-      const newLength = updateTruckDto.length ?? currentTruck.length;
-      updateData.maxPallets = this.calculateMaxPallets(newWidth, newLength);
-    }
+    const updateData = {
+      ...updateTruckDto,
+      maxPallets,
+    };
 
     const truck = await this.truckModel
       .findByIdAndUpdate(id, updateData, { new: true })

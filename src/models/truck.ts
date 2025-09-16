@@ -59,11 +59,15 @@ export interface IPalletInfo {
 }
 
 export const EURO_PALLET: IPalletInfo = {
-  width: 1200,
-  length: 800,
+  width: 1.2,
+  length: 0.8,
 };
+
+export const DOOR_CLEARANCE = 0.06;
 
 export interface ITrucksListResponse {
   trucks: ITruckResponse[];
   total: number;
+  page: number;
+  pageSize: number;
 }
