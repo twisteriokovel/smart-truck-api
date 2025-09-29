@@ -8,7 +8,7 @@ import {
   IAddressesListResponse,
 } from '../models/address';
 
-type AddressLean = Address & {
+export type AddressLean = Address & {
   _id: Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;

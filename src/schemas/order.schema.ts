@@ -1,20 +1,22 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
-import { OrderStatus } from '../models/order';
+import { OrderStatus, IPallet } from '../models/order';
 
 export type OrderDocument = Order & Document;
 
 @Schema({ timestamps: true })
 export class Order {
-  @Prop({ required: true })
-  cargoSize: number;
+  @Prop({ required: true, type: [{
+    id: { type: String, required: true },
+    weight: { type: Number, required: true },
+    height: { type: Number, required: true }
+  }] })
+  pallets: IPallet[];
 
-  @Prop({
-    required: true,
-    default: function (this: Order) {
-      return this.cargoSize;
-    },
-  })
+  @Prop({ required: true })
+  cargoWeight: number;
+
+  @Prop({ required: true })
   remainingCargo: number;
 
   @Prop({

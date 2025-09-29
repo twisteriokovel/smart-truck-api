@@ -7,6 +7,7 @@ import {
   Param,
   Delete,
   UseGuards,
+  Query,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { OrderService } from './order.service';
@@ -28,8 +29,13 @@ export class OrderController {
   }
 
   @Get()
-  async findAll(): Promise<IOrdersListResponse> {
-    return this.orderService.findAll();
+  async findAll(
+    @Query('page') page?: string,
+    @Query('pageSize') pageSize?: string,
+  ): Promise<IOrdersListResponse> {
+    const pageNum = page ? parseInt(page, 10) : 1;
+    const pageSizeNum = pageSize ? parseInt(pageSize, 10) : 10;
+    return this.orderService.findAll(pageNum, pageSizeNum);
   }
 
   @Get(':id')

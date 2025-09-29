@@ -6,18 +6,27 @@ export enum OrderStatus {
   CANCELLED = 'cancelled',
 }
 
+export interface IPallet {
+  id: string;
+  weight: number;
+  height: number;
+}
+
 export interface IOrderDto {
-  cargoSize: number;
+  pallets: IPallet[];
   destinationAddressId: string;
   notes?: string;
 }
 
+import { IAddressResponse } from './address';
+
 export interface IOrderResponse {
   _id: string;
-  cargoSize: number;
+  pallets: IPallet[];
+  cargoWeight: number;
   remainingCargo: number;
   status: OrderStatus;
-  destinationAddressId: string;
+  destinationAddress: IAddressResponse;
   notes?: string;
   trips: string[];
   createdAt: Date;
@@ -27,10 +36,12 @@ export interface IOrderResponse {
 export interface IOrdersListResponse {
   orders: IOrderResponse[];
   total: number;
+  page: number;
+  pageSize: number;
 }
 
 export interface IUpdateOrderDto {
-  cargoSize?: number;
+  pallets?: IPallet[];
   destinationAddressId?: string;
   notes?: string;
 }

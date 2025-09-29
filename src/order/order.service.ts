@@ -7,6 +7,8 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Order, OrderDocument } from '../schemas/order.schema';
 import { Trip, TripDocument } from '../schemas/trip.schema';
+import { Address, AddressDocument } from '../schemas/address.schema';
+import type { AddressLean } from 'src/address/address.service';
 import {
   IOrderResponse,
   IOrderDto,
@@ -14,6 +16,7 @@ import {
   IOrdersListResponse,
   OrderStatus,
 } from '../models/order';
+import { IAddressResponse } from '../models/address';
 import { TripStatus } from '../models/trip';
 
 type OrderLean = Order & {
@@ -27,30 +30,48 @@ export class OrderService {
   constructor(
     @InjectModel(Order.name) private orderModel: Model<OrderDocument>,
     @InjectModel(Trip.name) private tripModel: Model<TripDocument>,
+    @InjectModel(Address.name) private addressModel: Model<AddressDocument>,
   ) {}
 
   async create(createOrderDto: IOrderDto): Promise<IOrderResponse> {
+    const cargoWeight = createOrderDto.pallets.reduce(
+      (total, pallet) => total + pallet.weight,
+      0,
+    );
+
     const order = new this.orderModel({
       ...createOrderDto,
-      remainingCargo: createOrderDto.cargoSize,
+      cargoWeight,
+      remainingCargo: cargoWeight,
       status: OrderStatus.DRAFT,
     });
     const savedOrder = await order.save();
-    return this.transformToResponse(savedOrder);
+    return await this.transformToResponse(savedOrder);
   }
 
-  async findAll(): Promise<IOrdersListResponse> {
+  async findAll(
+    page: number = 1,
+    pageSize: number = 10,
+  ): Promise<IOrdersListResponse> {
+    const skip = (page - 1) * pageSize;
+
     const orders = await this.orderModel
       .find()
       .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(pageSize)
       .lean<OrderLean[]>()
       .exec();
 
     const total = await this.orderModel.countDocuments();
 
     return {
-      orders: orders.map((order) => this.transformToResponse(order)),
+      orders: await Promise.all(
+        orders.map((order) => this.transformToResponse(order)),
+      ),
       total,
+      page,
+      pageSize,
     };
   }
 
@@ -59,7 +80,7 @@ export class OrderService {
     if (!order) {
       throw new NotFoundException('Order not found');
     }
-    return this.transformToResponse(order);
+    return await this.transformToResponse(order);
   }
 
   async update(
@@ -75,15 +96,20 @@ export class OrderService {
       throw new BadRequestException('Cannot update order that is in progress');
     }
 
-    if (updateOrderDto.cargoSize !== undefined) {
-      const allocatedCargo = order.cargoSize - order.remainingCargo;
-      if (updateOrderDto.cargoSize < allocatedCargo) {
+    if (updateOrderDto.pallets !== undefined) {
+      const newCargoWeight = updateOrderDto.pallets.reduce(
+        (total, pallet) => total + pallet.weight,
+        0,
+      );
+      const allocatedCargo = order.cargoWeight - order.remainingCargo;
+      if (newCargoWeight < allocatedCargo) {
         throw new BadRequestException(
-          'New cargo size cannot be less than already allocated cargo',
+          'New cargo weight cannot be less than already allocated cargo',
         );
       }
-      order.remainingCargo = updateOrderDto.cargoSize - allocatedCargo;
-      order.cargoSize = updateOrderDto.cargoSize;
+      order.remainingCargo = newCargoWeight - allocatedCargo;
+      order.cargoWeight = newCargoWeight;
+      order.pallets = updateOrderDto.pallets;
     }
 
     if (updateOrderDto.destinationAddressId !== undefined) {
@@ -98,7 +124,7 @@ export class OrderService {
 
     await this.checkAndUpdateOrderStatus(order);
     const updatedOrder = await order.save();
-    return this.transformToResponse(updatedOrder);
+    return await this.transformToResponse(updatedOrder);
   }
 
   async cancel(id: string): Promise<IOrderResponse> {
@@ -122,7 +148,7 @@ export class OrderService {
 
     order.status = OrderStatus.CANCELLED;
     const updatedOrder = await order.save();
-    return this.transformToResponse(updatedOrder);
+    return await this.transformToResponse(updatedOrder);
   }
 
   async remove(id: string): Promise<void> {
@@ -179,15 +205,35 @@ export class OrderService {
     }
   }
 
-  private transformToResponse(
+  private async transformToResponse(
     order: OrderDocument | OrderLean,
-  ): IOrderResponse {
+  ): Promise<IOrderResponse> {
+    const address = await this.addressModel
+      .findById<AddressLean>(order.destinationAddressId)
+      .exec();
+    if (!address) {
+      throw new NotFoundException('Destination address not found');
+    }
+
+    const destinationAddress: IAddressResponse = {
+      _id: address._id.toString(),
+      addressLine1: address.addressLine1,
+      addressLine2: address.addressLine2,
+      city: address.city,
+      country: address.country,
+      postcode: address.postcode,
+      state: address.state,
+      createdAt: address.createdAt,
+      updatedAt: address.updatedAt,
+    };
+
     return {
       _id: (order as OrderLean)._id.toString(),
-      cargoSize: order.cargoSize,
+      pallets: order.pallets,
+      cargoWeight: order.cargoWeight,
       remainingCargo: order.remainingCargo,
       status: order.status,
-      destinationAddressId: order.destinationAddressId.toString(),
+      destinationAddress,
       notes: order.notes || undefined,
       trips: order.trips.map((trip) => trip.toString()),
       createdAt: (order as OrderLean).createdAt,

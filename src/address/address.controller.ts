@@ -10,7 +10,7 @@ import {
   Query,
 } from '@nestjs/common';
 import { AddressService } from './address.service';
-import { IAddressDto, IAddressResponse } from '../models/address';
+import { IAddressDto } from '../models/address';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 @Controller('addresses')
