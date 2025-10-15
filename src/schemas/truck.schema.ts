@@ -1,6 +1,5 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
-import { EURO_PALLET } from '../models/truck';
 
 export type TruckDocument = Truck & Document;
 
@@ -32,6 +31,12 @@ export class Truck {
 
   @Prop()
   truckModel?: string;
+
+  @Prop()
+  model?: string;
+
+  @Prop()
+  fuelCapacity?: number;
 
   @Prop()
   manufacturingYear?: number;

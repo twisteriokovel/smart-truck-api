@@ -8,6 +8,7 @@ import { Model, Types } from 'mongoose';
 import { Order, OrderDocument } from '../schemas/order.schema';
 import { Trip, TripDocument } from '../schemas/trip.schema';
 import { Address, AddressDocument } from '../schemas/address.schema';
+import { CounterService } from '../utils/counter.service';
 import type { AddressLean } from 'src/address/address.service';
 import {
   IOrderResponse,
@@ -31,6 +32,7 @@ export class OrderService {
     @InjectModel(Order.name) private orderModel: Model<OrderDocument>,
     @InjectModel(Trip.name) private tripModel: Model<TripDocument>,
     @InjectModel(Address.name) private addressModel: Model<AddressDocument>,
+    private counterService: CounterService,
   ) {}
 
   async create(createOrderDto: IOrderDto): Promise<IOrderResponse> {
@@ -39,8 +41,11 @@ export class OrderService {
       0,
     );
 
+    const orderNumber = await this.counterService.generateOrderNumber();
+
     const order = new this.orderModel({
       ...createOrderDto,
+      orderNumber,
       cargoWeight,
       remainingCargo: cargoWeight,
       status: OrderStatus.DRAFT,
@@ -229,6 +234,7 @@ export class OrderService {
 
     return {
       _id: (order as OrderLean)._id.toString(),
+      orderNumber: order.orderNumber,
       pallets: order.pallets,
       cargoWeight: order.cargoWeight,
       remainingCargo: order.remainingCargo,

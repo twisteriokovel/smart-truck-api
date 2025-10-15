@@ -6,6 +6,7 @@ import {
   Patch,
   Param,
   Delete,
+  Put,
   UseGuards,
   Query,
 } from '@nestjs/common';
@@ -43,7 +44,7 @@ export class OrderController {
     return this.orderService.findOne(id);
   }
 
-  @Patch(':id')
+  @Put(':id')
   async update(
     @Param('id') id: string,
     @Body() updateOrderDto: IUpdateOrderDto,

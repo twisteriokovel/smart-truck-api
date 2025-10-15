@@ -22,6 +22,7 @@ import { IAddressResponse } from './address';
 
 export interface IOrderResponse {
   _id: string;
+  orderNumber: string;
   pallets: IPallet[];
   cargoWeight: number;
   remainingCargo: number;

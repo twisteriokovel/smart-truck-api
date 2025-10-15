@@ -6,11 +6,19 @@ export type OrderDocument = Order & Document;
 
 @Schema({ timestamps: true })
 export class Order {
-  @Prop({ required: true, type: [{
-    id: { type: String, required: true },
-    weight: { type: Number, required: true },
-    height: { type: Number, required: true }
-  }] })
+  @Prop({ required: true, unique: true })
+  orderNumber: string;
+
+  @Prop({
+    required: true,
+    type: [
+      {
+        id: { type: String, required: true },
+        weight: { type: Number, required: true },
+        height: { type: Number, required: true },
+      },
+    ],
+  })
   pallets: IPallet[];
 
   @Prop({ required: true })

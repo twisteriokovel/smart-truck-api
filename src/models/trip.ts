@@ -1,29 +1,92 @@
 export enum TripStatus {
-  NEW = 'new',
+  PLANNED = 'planned',
   IN_PROGRESS = 'in_progress',
   DONE = 'done',
   CANCELLED = 'cancelled',
 }
 
+export interface IOrderTrip {
+  _id: string;
+  orderId: string;
+  truckId: string;
+  startDate: Date;
+  status: TripStatus;
+  palletIds: string[];
+  estimatedFuel: number;
+  estimatedDuration: number;
+  actualFuel?: number;
+  actualDuration?: number;
+  notes?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface ICreateOrderTripData {
+  orderId: string;
+  truckId: string;
+  startDate: Date;
+  palletIds: string[];
+  estimatedFuel: number;
+  estimatedDuration: number;
+  notes?: string;
+}
+
+export interface IUpdateOrderTripData {
+  truckId?: string;
+  startDate?: Date;
+  palletIds?: string[];
+  estimatedFuel?: number;
+  estimatedDuration?: number;
+  notes?: string;
+}
+
+export interface ICompleteOrderTripData {
+  actualFuel?: number;
+  actualDuration?: number;
+}
+
 export interface ITripDto {
   orderId: string;
   truckId: string;
-  cargoSize: number;
-  startTime: Date;
-  plannedFuel: number;
+  palletIds?: string[];
+  startDate: Date;
+  estimatedFuel: number;
+  estimatedDuration: number;
+  notes?: string;
+}
+
+export interface ITripTruckInfo {
+  _id: string;
+  plateNumber: string;
+  vinCode: string;
+  registrationCertificate: string;
+  driverName: string;
+  width: number;
+  height: number;
+  length: number;
+  maxWeight: number;
+  truckModel?: string;
+  model?: string;
+  fuelCapacity?: number;
+  manufacturingYear?: number;
+  notes?: string;
+  isActive: boolean;
+  maxPallets: number;
 }
 
 export interface ITripResponse {
   _id: string;
+  tripNumber: string;
   orderId: string;
   truckId: string;
-  cargoSize: number;
+  truck: ITripTruckInfo;
   status: TripStatus;
-  startTime: Date;
-  plannedFuel: number;
-  actualEndTime?: Date;
+  startDate: Date;
+  palletIds: string[];
+  estimatedFuel: number;
+  estimatedDuration: number;
   actualFuel?: number;
-  actualTimeSpent?: number;
+  actualDuration?: number;
   notes?: string;
   createdAt: Date;
   updatedAt: Date;
@@ -35,18 +98,19 @@ export interface ITripsListResponse {
 }
 
 export interface IUpdateTripDto {
-  cargoSize?: number;
-  startTime?: Date;
-  plannedFuel?: number;
-  actualEndTime?: Date;
-  actualFuel?: number;
-  actualTimeSpent?: number;
+  truckId?: string;
+  startDate?: Date;
+  palletIds?: string[];
+  estimatedFuel?: number;
+  estimatedDuration?: number;
   notes?: string;
 }
 
 export interface IFinishTripDto {
-  actualEndTime: Date;
-  actualFuel: number;
-  actualTimeSpent: number;
-  notes?: string;
+  actualFuel?: number;
+  actualDuration?: number;
+}
+
+export interface IUpdateTripStatusDto {
+  status: TripStatus;
 }

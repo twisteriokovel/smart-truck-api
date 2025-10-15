@@ -9,7 +9,6 @@ import { Truck, TruckDocument } from '../schemas/truck.schema';
 import {
   ITruckResponse,
   ICreateTruckDto,
-  IUpdateTruckDto,
   ITrucksListResponse,
   EURO_PALLET,
   DOOR_CLEARANCE,
@@ -35,7 +34,9 @@ export class TruckService {
     const palletsLengthwise = Math.floor(usableLength / EURO_PALLET.length);
 
     const palletsWidthwiseRotated = Math.floor(width / EURO_PALLET.length);
-    const palletsLengthwiseRotated = Math.floor(usableLength / EURO_PALLET.width);
+    const palletsLengthwiseRotated = Math.floor(
+      usableLength / EURO_PALLET.width,
+    );
 
     const orientation1 = palletsWidthwise * palletsLengthwise;
     const orientation2 = palletsWidthwiseRotated * palletsLengthwiseRotated;
@@ -71,7 +72,10 @@ export class TruckService {
     return this.transformToResponse(savedTruck);
   }
 
-  async findAll(page: number = 1, pageSize: number = 10): Promise<ITrucksListResponse> {
+  async findAll(
+    page: number = 1,
+    pageSize: number = 10,
+  ): Promise<ITrucksListResponse> {
     const skip = (page - 1) * pageSize;
 
     const trucks = await this.truckModel
