@@ -11,10 +11,11 @@ async function runSeed() {
     const command = args[0];
 
     switch (command) {
-      case 'seed':
+      case 'seed': {
         const months = parseInt(args[1]) || 3;
         await seedService.seedOrdersAndTrips(months);
         break;
+      }
       case 'clear':
         await seedService.clearSeedData();
         break;
@@ -31,7 +32,7 @@ async function runSeed() {
         break;
     }
   } catch (error) {
-    console.error('Seeding failed:', error.message);
+    console.error('Seeding failed:', error);
     process.exit(1);
   } finally {
     await app.close();

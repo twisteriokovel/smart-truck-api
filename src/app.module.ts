@@ -9,6 +9,7 @@ import { TruckModule } from './truck/truck.module';
 import { OrderModule } from './order/order.module';
 import { TripModule } from './trip/trip.module';
 import { StatisticsModule } from './statistics/statistics.module';
+import { SmartTripModule } from './smart-trip/smart-trip.module';
 import { SeedDataService } from './utils/seed-data.service';
 import { CounterService } from './utils/counter.service';
 import { Order, OrderSchema } from './schemas/order.schema';
@@ -36,6 +37,7 @@ import { Counter, CounterSchema } from './schemas/counter.schema';
     OrderModule,
     TripModule,
     StatisticsModule,
+    SmartTripModule,
   ],
   controllers: [AppController],
   providers: [AppService, SeedDataService, CounterService],

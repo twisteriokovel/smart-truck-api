@@ -21,6 +21,7 @@
     "seed": "ts-node -r tsconfig-paths/register src/utils/seed-command.ts"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.67.0",
     "@nestjs/common": "^11.0.1",
     "@nestjs/config": "^4.0.2",
     "@nestjs/core": "^11.0.1",

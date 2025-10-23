@@ -8,132 +8,8 @@ import { Address, AddressDocument } from '../schemas/address.schema';
 import { OrderStatus, IPallet } from '../models/order';
 import { TripStatus } from '../models/trip';
 import { CounterService } from './counter.service';
-
-const addressesData = {
-  '68ee1a4f493031c91ab8ddb4': {
-    city: 'Житомир',
-    range: 140, // км
-    time: 2, // години
-  },
-  '68ee1a43493031c91ab8ddb2': {
-    city: 'Суми',
-    range: 350, // км
-    time: 5, // години
-  },
-  '68ee1a3c493031c91ab8ddb0': {
-    city: 'Кропивницький',
-    range: 310, // км
-    time: 4.5, // години
-  },
-  '68ee1a39493031c91ab8ddae': {
-    city: 'Вінниця',
-    range: 270, // км
-    time: 5, // години
-  },
-  '68ee1a1f493031c91ab8dda9': {
-    city: 'Полтава',
-    range: 340, // км
-    time: 4.5, // години
-  },
-  '68c593a37bfb49e53b71c924': {
-    city: 'Чернівці',
-    range: 470, // км
-    time: 12, // години
-  },
-  '68c588f18b086a91a8eb0eed': {
-    city: 'Запоріжжя',
-    range: 520, // км
-    time: 11, // години
-  },
-  '68c5889b8b086a91a8eb0ee6': {
-    city: 'Дніпро',
-    range: 480, // км
-    time: 10, // години
-  },
-  '68c5881e8b086a91a8eb0ee2': {
-    city: 'Харків',
-    range: 480, // км
-    time: 6, // години
-  },
-  '68c586e58b086a91a8eb0ed4': {
-    city: 'Одеса',
-    range: 480, // км
-    time: 7, // години
-  },
-  '689863f2dd3ee17c497f10e3': {
-    city: 'Lviv',
-    range: 540, // км
-    time: 8, // години
-  },
-};
-
-const trucksData = {
-  '68ee1959493031c91ab8dda1': {
-    model: 'Iveco Eurocargo 75E',
-    consumption: 18, // л/100км
-    averageSpeed: 75, // км/год
-  },
-  '68ee1941493031c91ab8dd9b': {
-    model: 'Hyundai HD65',
-    consumption: 15, // л/100км
-    averageSpeed: 70, // км/год
-  },
-  '68ee1926493031c91ab8dd98': {
-    model: 'Isuzu NPR',
-    consumption: 16, // л/100км
-    averageSpeed: 75, // км/год
-  },
-  '68ee18da493031c91ab8dd86': {
-    model: 'MAN',
-    consumption: 28, // л/100км
-    averageSpeed: 80, // км/год
-  },
-  '68ee18a6493031c91ab8dd80': {
-    model: 'МАЗ-5440',
-    consumption: 30, // л/100км
-    averageSpeed: 80, // км/год
-  },
-  '68ee1874493031c91ab8dd76': {
-    model: 'МАЗ-6312',
-    consumption: 32, // л/100км
-    averageSpeed: 75, // км/год
-  },
-  '68ee16ea493031c91ab8dd66': {
-    model: 'Volvo FH16',
-    consumption: 30, // л/100км
-    averageSpeed: 85, // км/год
-  },
-  '68e79bce50a4d988df7d65e8': {
-    model: 'Volvo FL',
-    consumption: 20, // л/100км
-    averageSpeed: 80, // км/год
-  },
-  '68e79b6d50a4d988df7d65e3': {
-    model: 'Isuzu N-Series',
-    consumption: 14, // л/100км
-    averageSpeed: 70, // км/год
-  },
-  '68e79b2450a4d988df7d65de': {
-    model: 'Mercedes Sprinter',
-    consumption: 11, // л/100км
-    averageSpeed: 90, // км/год
-  },
-  '68e79ad750a4d988df7d65d9': {
-    model: 'Ford Transit',
-    consumption: 10, // л/100км
-    averageSpeed: 90, // км/год
-  },
-  '68c82cff143c5df8853c64ed': {
-    model: 'Volvo FH 460',
-    consumption: 28, // л/100км
-    averageSpeed: 85, // км/год
-  },
-  '68c82c85c5ee10bdfa265f07': {
-    model: 'Mercedes-Benz Actros 1845',
-    consumption: 28, // л/100км
-    averageSpeed: 85, // км/год
-  },
-};
+import { trucksData } from '../constants/trucks-data';
+import { addressesData } from '../constants/addresses-data';
 
 @Injectable()
 export class SeedDataService {
@@ -220,7 +96,7 @@ export class SeedDataService {
       pallets,
       cargoWeight,
       remainingCargo: cargoWeight,
-      status: this.getRandomOrderStatus(orderDate),
+      status: this.getRandomOrderStatus(),
       destinationAddressId: randomAddress._id,
       notes: this.getRandomOrderNotes(),
       trips: [],
@@ -249,7 +125,7 @@ export class SeedDataService {
     return pallets;
   }
 
-  private getRandomOrderStatus(orderDate: Date): OrderStatus {
+  private getRandomOrderStatus(): OrderStatus {
     // For historical data (statistics), only generate DONE or CANCELLED orders
     // 85% completed, 15% cancelled for realistic business statistics
     return Math.random() < 0.85 ? OrderStatus.DONE : OrderStatus.CANCELLED;
@@ -397,10 +273,13 @@ export class SeedDataService {
       return Math.floor(Math.random() * 100) + 50;
     }
 
-    // Calculate fuel: consumption (l/100km) * distance (km) * 2 (round trip) / 100
-    const distanceKm = addressData.range;
+    // Calculate fuel: consumption (l/100km) * distance (km from Kyiv) * 2 (round trip) / 100
+    const oneWayDistanceKm = addressData.range; // Distance from Kyiv to destination
+    const roundTripDistanceKm = oneWayDistanceKm * 2; // Round trip
     const fuelConsumption = truckData.consumption;
-    const estimatedFuel = Math.round((fuelConsumption * distanceKm * 2) / 100);
+    const estimatedFuel = Math.round(
+      (fuelConsumption * roundTripDistanceKm) / 100,
+    );
 
     return estimatedFuel;
   }
@@ -413,18 +292,27 @@ export class SeedDataService {
       return Math.floor(Math.random() * 6) + 8; // 8-14 hours
     }
 
-    // Calculate duration: travel time * 2 + unloading time + rest time (if needed)
-    const travelTimeHours = addressData.time * 2; // Round trip
-    const unloadingTimeHours = Math.floor(Math.random() * 2) + 2; // 2-3 hours unloading
+    // Calculate duration: travel time from Kyiv * 2 (round trip) + loading/unloading time + rest time (if needed)
+    const oneWayTravelHours = addressData.time; // Time from Kyiv to destination
+    const roundTripTravelHours = oneWayTravelHours * 2; // Round trip travel time
 
-    let totalHours = travelTimeHours + unloadingTimeHours;
+    // Loading at hub + unloading at destination
+    const loadingTimeHours = Math.floor(Math.random() * 1) + 1; // 1-2 hours loading at hub
+    const unloadingTimeHours = Math.floor(Math.random() * 2) + 2; // 2-3 hours unloading at destination
 
-    // If driver works more than 9 hours, add mandatory 9-hour rest
-    if (totalHours > 9) {
-      totalHours += 9; // Mandatory rest period
+    const totalWorkingHours =
+      roundTripTravelHours + loadingTimeHours + unloadingTimeHours;
+
+    // Apply EU driver regulations: mandatory rest after every 9 hours of work
+    let totalHoursWithRest = totalWorkingHours;
+    if (totalWorkingHours > 9) {
+      // Calculate how many 9-hour blocks we have
+      const fullBlocks = Math.floor(totalWorkingHours / 9);
+      // Add 9 hours of rest for each complete 9-hour block
+      totalHoursWithRest += fullBlocks * 9;
     }
 
-    return Math.round(totalHours);
+    return Math.round(totalHoursWithRest);
   }
 
   private calculateActualFuel(estimatedFuel: number): number {
