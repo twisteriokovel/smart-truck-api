@@ -4,7 +4,6 @@ export interface ITruckData {
   averageSpeed: number; // km/h
 }
 
-// Truck specifications data
 export const trucksData: Record<string, ITruckData> = {
   '68ee1959493031c91ab8dda1': {
     model: 'Iveco Eurocargo 75E',

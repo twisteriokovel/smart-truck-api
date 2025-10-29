@@ -4,7 +4,6 @@ export interface IAddressData {
   time: number; // hours from Kyiv/Hub (one-way)
 }
 
-// Address data: distances and travel times from Kyiv (Hub) to destinations
 export const addressesData: Record<string, IAddressData> = {
   '68ee1a4f493031c91ab8ddb4': {
     city: 'Житомир',

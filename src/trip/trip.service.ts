@@ -71,6 +71,11 @@ export class TripService {
 
     if (createTripDto.palletIds && createTripDto.palletIds.length > 0) {
       await this.validatePalletIds(order, createTripDto.palletIds);
+      await this.validatePalletDimensions(
+        createTripDto.truckId,
+        order,
+        createTripDto.palletIds,
+      );
     }
 
     await this.validateTruckAvailability(createTripDto.truckId);
@@ -455,9 +460,31 @@ export class TripService {
       );
     }
 
-    // You could also add weight validation here if pallets have weight info
-    // const totalWeight = palletIds.reduce((sum, id) => sum + pallet.weight, 0);
-    // if (totalWeight > truck.maxWeight) { ... }
+    const order = await this.orderModel.findById(trip.orderId).exec();
+    if (!order) {
+      throw new NotFoundException('Order not found');
+    }
+
+    // Get pallets data from order
+    const pallets = order.pallets.filter((p) => palletIds.includes(p.id));
+
+    const totalWeight = pallets.reduce((sum, pallet) => sum + pallet.weight, 0);
+    if (totalWeight > truck.maxWeight) {
+      throw new BadRequestException(
+        `Trip total weight ${totalWeight}kg exceeds truck capacity: ${truck.maxWeight}kg`,
+      );
+    }
+
+    const tallestPalletCm = Math.max(...pallets.map((p) => p.height));
+    const tallestPalletM = tallestPalletCm / 100; // Convert cm to meters
+    if (tallestPalletM > truck.height) {
+      const tallPallets = pallets.filter(p => (p.height / 100) > truck.height);
+      throw new BadRequestException(
+        `Pallet height ${tallestPalletCm}cm (${tallestPalletM}m) exceeds truck height capacity: ${truck.height}m. ` +
+        `Incompatible pallets: ${tallPallets.map(p => p.id).join(', ')}. ` +
+        `Please select a truck with height >= ${tallestPalletM}m`,
+      );
+    }
   }
 
   private async validatePalletIds(
@@ -845,5 +872,36 @@ export class TripService {
     }
 
     return this.transformToResponse(updatedTrip);
+  }
+
+  private async validatePalletDimensions(
+    truckId: string,
+    order: OrderDocument,
+    palletIds: string[],
+  ): Promise<void> {
+    const truck = await this.truckModel.findById(truckId).exec();
+    if (!truck) {
+      throw new NotFoundException('Truck not found');
+    }
+
+    const pallets = order.pallets.filter((p) => palletIds.includes(p.id));
+
+    const totalWeight = pallets.reduce((sum, pallet) => sum + pallet.weight, 0);
+    if (totalWeight > truck.maxWeight) {
+      throw new BadRequestException(
+        `Trip total weight ${totalWeight}kg exceeds truck capacity: ${truck.maxWeight}kg`,
+      );
+    }
+
+    const tallestPalletCm = Math.max(...pallets.map((p) => p.height));
+    const tallestPalletM = tallestPalletCm / 100; // Convert cm to meters
+    if (tallestPalletM > truck.height) {
+      const tallPallets = pallets.filter(p => (p.height / 100) > truck.height);
+      throw new BadRequestException(
+        `Pallet height ${tallestPalletCm}cm (${tallestPalletM}m) exceeds truck height capacity: ${truck.height}m. ` +
+        `Incompatible pallets: ${tallPallets.map(p => p.id).join(', ')}. ` +
+        `Please select a truck with height >= ${tallestPalletM}m`,
+      );
+    }
   }
 }

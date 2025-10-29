@@ -99,7 +99,8 @@ export class TripOptimizerService {
         const bestTruck = this.findBestTruckForPallet(trucks, pallet, bins);
         if (!bestTruck) {
           throw new Error(
-            `No suitable truck found for pallet ${pallet.id} (weight: ${pallet.weight}kg)`,
+            `No suitable truck found for pallet ${pallet.id} (weight: ${pallet.weight}kg, height: ${pallet.height}cm). ` +
+              `Please ensure trucks have sufficient weight capacity and height clearance.`,
           );
         }
 
@@ -127,8 +128,10 @@ export class TripOptimizerService {
     const currentWeight = this.getBinUsedWeight(bin);
     const weightFits = currentWeight + pallet.weight <= bin.truck.maxWeight;
     const palletCountFits = bin.items.length < bin.truck.maxPallets;
+    const palletHeightInMeters = pallet.height / 100; // Convert cm to meters
+    const heightFits = palletHeightInMeters <= bin.truck.height;
 
-    return weightFits && palletCountFits;
+    return weightFits && palletCountFits && heightFits;
   }
 
   private addPalletToBin(bin: IBin, pallet: IPallet): void {
@@ -144,17 +147,22 @@ export class TripOptimizerService {
     existingBins: IBin[],
   ): ITripTruckInfo | null {
     const usedTruckIds = new Set(existingBins.map((bin) => bin.truckId));
+    const palletHeightInMeters = pallet.height / 100; // Convert cm to meters
     const availableTrucks = trucks.filter(
       (truck) =>
         truck.maxWeight >= pallet.weight &&
         truck.maxPallets >= 1 &&
+        truck.height >= palletHeightInMeters &&
         !usedTruckIds.has(truck._id),
     );
 
     if (availableTrucks.length === 0) {
       return (
         trucks.find(
-          (truck) => truck.maxWeight >= pallet.weight && truck.maxPallets >= 1,
+          (truck) =>
+            truck.maxWeight >= pallet.weight &&
+            truck.maxPallets >= 1 &&
+            truck.height >= palletHeightInMeters,
         ) || null
       );
     }
