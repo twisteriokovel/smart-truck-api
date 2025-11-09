@@ -476,13 +476,13 @@ export class TripService {
     }
 
     const tallestPalletCm = Math.max(...pallets.map((p) => p.height));
-    const tallestPalletM = tallestPalletCm / 100; // Convert cm to meters
+    const tallestPalletM = tallestPalletCm / 100;
     if (tallestPalletM > truck.height) {
-      const tallPallets = pallets.filter(p => (p.height / 100) > truck.height);
+      const tallPallets = pallets.filter((p) => p.height / 100 > truck.height);
       throw new BadRequestException(
         `Pallet height ${tallestPalletCm}cm (${tallestPalletM}m) exceeds truck height capacity: ${truck.height}m. ` +
-        `Incompatible pallets: ${tallPallets.map(p => p.id).join(', ')}. ` +
-        `Please select a truck with height >= ${tallestPalletM}m`,
+          `Incompatible pallets: ${tallPallets.map((p) => p.id).join(', ')}. ` +
+          `Please select a truck with height >= ${tallestPalletM}m`,
       );
     }
   }
@@ -896,11 +896,11 @@ export class TripService {
     const tallestPalletCm = Math.max(...pallets.map((p) => p.height));
     const tallestPalletM = tallestPalletCm / 100; // Convert cm to meters
     if (tallestPalletM > truck.height) {
-      const tallPallets = pallets.filter(p => (p.height / 100) > truck.height);
+      const tallPallets = pallets.filter((p) => p.height / 100 > truck.height);
       throw new BadRequestException(
         `Pallet height ${tallestPalletCm}cm (${tallestPalletM}m) exceeds truck height capacity: ${truck.height}m. ` +
-        `Incompatible pallets: ${tallPallets.map(p => p.id).join(', ')}. ` +
-        `Please select a truck with height >= ${tallestPalletM}m`,
+          `Incompatible pallets: ${tallPallets.map((p) => p.id).join(', ')}. ` +
+          `Please select a truck with height >= ${tallestPalletM}m`,
       );
     }
   }

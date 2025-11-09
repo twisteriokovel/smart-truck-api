@@ -14,9 +14,6 @@ export class EnhancedCalculatorService {
     @InjectModel(Address.name) private addressModel: Model<Address>,
   ) {}
 
-  /**
-   * Calculate realistic estimated fuel consumption for a trip
-   */
   async calculateEstimatedFuel(
     truck: ITripTruckInfo,
     destinationAddressId?: string,
@@ -26,75 +23,9 @@ export class EnhancedCalculatorService {
       const truckSpec = trucksData[truck._id];
       let addressSpec: IAddressData | undefined;
 
-      // Try to get address data
       if (destinationAddressId) {
         addressSpec = addressesData[destinationAddressId];
 
-        // If not in our static data, try to fetch from database
-        if (!addressSpec) {
-          const address = await this.addressModel
-            .findById(destinationAddressId)
-            .lean();
-          if (address) {
-            // Use a default distance calculation if not in our static data
-            addressSpec = {
-              city: address.city || 'Unknown',
-              range: 250, // Default distance from Kyiv
-              time: 4, // Default time from Kyiv
-            };
-          }
-        }
-      }
-
-      // Calculate fuel consumption
-      const oneWayDistanceKm = addressSpec?.range || 250; // Default 250km from Kyiv
-      const roundTripDistanceKm = oneWayDistanceKm * 2; // Round trip
-      const baseConsumption = truckSpec?.consumption || 25; // Default consumption
-
-      // Calculate round trip fuel
-      let totalFuel = (baseConsumption * roundTripDistanceKm) / 100;
-
-      // Add weight penalty for heavier loads
-      if (weight && weight > 0) {
-        const weightPenaltyPercent = Math.min(weight / 5000, 0.3); // Max 30% penalty for very heavy loads
-        totalFuel *= (1 + weightPenaltyPercent);
-      }
-
-      // Add 10% safety margin
-      totalFuel *= 1.1;
-
-      const result = Math.round(totalFuel);
-
-      this.logger.debug(
-        `Fuel calculation: Truck=${truckSpec?.model || 'Unknown'}, ` +
-        `OneWayDistance=${oneWayDistanceKm}km, RoundTrip=${roundTripDistanceKm}km, ` +
-        `Consumption=${baseConsumption}L/100km, Weight=${weight || 0}kg, Result=${result}L`
-      );
-
-      return result;
-    } catch (error) {
-      this.logger.warn('Fuel calculation failed, using fallback:', error);
-      return this.calculateFallbackFuel(weight);
-    }
-  }
-
-  /**
-   * Calculate realistic estimated duration for a trip with proper driver rest
-   */
-  async calculateEstimatedDuration(
-    truck: ITripTruckInfo,
-    destinationAddressId?: string,
-    palletCount?: number,
-  ): Promise<number> {
-    try {
-      const truckSpec = trucksData[truck._id];
-      let addressSpec: IAddressData | undefined;
-
-      // Try to get address data
-      if (destinationAddressId) {
-        addressSpec = addressesData[destinationAddressId];
-
-        // If not in our static data, try to fetch from database
         if (!addressSpec) {
           const address = await this.addressModel
             .findById(destinationAddressId)
@@ -109,15 +40,69 @@ export class EnhancedCalculatorService {
         }
       }
 
-      // Calculate duration components
-      const oneWayTravelTime = addressSpec?.time || 4; // Default 4 hours from Kyiv
-      const roundTripTravelTime = oneWayTravelTime * 2; // Round trip travel time
+      const oneWayDistanceKm = addressSpec?.range || 250;
+      const roundTripDistanceKm = oneWayDistanceKm * 2;
+      const baseConsumption = truckSpec?.consumption || 25;
+
+      let totalFuel = (baseConsumption * roundTripDistanceKm) / 100;
+
+      if (weight && weight > 0) {
+        const weightPenaltyPercent = Math.min(weight / 5000, 0.3); // Max 30% penalty for very heavy loads
+        totalFuel *= 1 + weightPenaltyPercent;
+      }
+
+      // Add 10% safety margin
+      totalFuel *= 1.1;
+
+      const result = Math.round(totalFuel);
+
+      this.logger.debug(
+        `Fuel calculation: Truck=${truckSpec?.model || 'Unknown'}, ` +
+          `OneWayDistance=${oneWayDistanceKm}km, RoundTrip=${roundTripDistanceKm}km, ` +
+          `Consumption=${baseConsumption}L/100km, Weight=${weight || 0}kg, Result=${result}L`,
+      );
+
+      return result;
+    } catch (error) {
+      this.logger.warn('Fuel calculation failed, using fallback:', error);
+      return this.calculateFallbackFuel(weight);
+    }
+  }
+  async calculateEstimatedDuration(
+    truck: ITripTruckInfo,
+    destinationAddressId?: string,
+    palletCount?: number,
+  ): Promise<number> {
+    try {
+      const truckSpec = trucksData[truck._id];
+      let addressSpec: IAddressData | undefined;
+
+      if (destinationAddressId) {
+        addressSpec = addressesData[destinationAddressId];
+
+        if (!addressSpec) {
+          const address = await this.addressModel
+            .findById(destinationAddressId)
+            .lean();
+          if (address) {
+            addressSpec = {
+              city: address.city || 'Unknown',
+              range: 250,
+              time: 4,
+            };
+          }
+        }
+      }
+
+      const oneWayTravelTime = addressSpec?.time || 4;
+      const roundTripTravelTime = oneWayTravelTime * 2;
 
       // Loading/unloading time based on pallet count
       const loadingTimeAtHub = (palletCount || 1) * 0.25; // 15 minutes per pallet at hub
       const unloadingTimeAtDestination = Math.max(1, (palletCount || 1) * 0.25); // Minimum 1 hour at destination
 
-      let totalWorkingHours = roundTripTravelTime + loadingTimeAtHub + unloadingTimeAtDestination;
+      const totalWorkingHours =
+        roundTripTravelTime + loadingTimeAtHub + unloadingTimeAtDestination;
 
       // Apply EU driver regulations: mandatory rest after every 9 hours of work
       let totalHoursWithRest = totalWorkingHours;
@@ -136,10 +121,10 @@ export class EnhancedCalculatorService {
 
       this.logger.debug(
         `Duration calculation: Truck=${truckSpec?.model || 'Unknown'}, ` +
-        `OneWayTravel=${oneWayTravelTime}h, RoundTripTravel=${roundTripTravelTime}h, ` +
-        `LoadingTime=${loadingTimeAtHub + unloadingTimeAtDestination}h, ` +
-        `WorkingHours=${totalWorkingHours}h, WithRest=${totalHoursWithRest}h, ` +
-        `Pallets=${palletCount || 0}, Result=${result}h`
+          `OneWayTravel=${oneWayTravelTime}h, RoundTripTravel=${roundTripTravelTime}h, ` +
+          `LoadingTime=${loadingTimeAtHub + unloadingTimeAtDestination}h, ` +
+          `WorkingHours=${totalWorkingHours}h, WithRest=${totalHoursWithRest}h, ` +
+          `Pallets=${palletCount || 0}, Result=${result}h`,
       );
 
       return result;
@@ -149,22 +134,14 @@ export class EnhancedCalculatorService {
     }
   }
 
-  /**
-   * Get truck specifications for analysis
-   */
   getTruckSpecs(truckId: string): ITruckData | undefined {
     return trucksData[truckId];
   }
 
-  /**
-   * Get address specifications for analysis
-   */
   async getAddressSpecs(addressId: string): Promise<IAddressData | undefined> {
-    // Try static data first
     let addressSpec = addressesData[addressId];
 
     if (!addressSpec) {
-      // Try database
       const address = await this.addressModel.findById(addressId).lean();
       if (address) {
         addressSpec = {
@@ -178,27 +155,18 @@ export class EnhancedCalculatorService {
     return addressSpec;
   }
 
-  /**
-   * Fallback fuel calculation when data is missing
-   */
   private calculateFallbackFuel(weight?: number): number {
     const baseFuel = 50; // 50L base
     const weightPenalty = weight ? (weight / 1000) * 5 : 0; // 5L per ton
     return Math.round(baseFuel + weightPenalty);
   }
 
-  /**
-   * Fallback duration calculation when data is missing
-   */
   private calculateFallbackDuration(palletCount?: number): number {
     const baseDuration = 8; // 8 hours base
     const loadingTime = (palletCount || 1) * 0.25;
     return Math.round(baseDuration + loadingTime);
   }
 
-  /**
-   * Calculate efficiency metrics for LLM analysis
-   */
   calculateEfficiencyMetrics(
     truck: ITripTruckInfo,
     estimatedWeight: number,
@@ -230,10 +198,6 @@ export class EnhancedCalculatorService {
       costEfficiency: Math.round(costEfficiency),
     };
   }
-
-  /**
-   * Calculate detailed working time breakdown for analysis
-   */
   calculateWorkingTimeBreakdown(
     oneWayTravelTime: number,
     palletCount: number,

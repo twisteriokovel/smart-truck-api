@@ -14,7 +14,6 @@ import { TripOptimizerService } from './trip-optimizer.service';
 import { HistoricalContextService } from './historical-context.service';
 import { EnhancedCalculatorService } from './enhanced-calculator.service';
 
-// Interfaces for LLM response parsing
 interface ILLMAnalysisRawResponse {
   reasoning?: string;
   risks?: unknown;
@@ -50,9 +49,6 @@ export class SmartOrderService {
     });
   }
 
-  /**
-   * Main method to create smart optimized trips with LLM analysis
-   */
   async createSmartOptimization(
     request: ISmartOptimizationRequest,
   ): Promise<ISmartOptimizationResponse> {
@@ -134,9 +130,6 @@ export class SmartOrderService {
     }
   }
 
-  /**
-   * Enhance optimized trips with LLM analysis
-   */
   private async enhanceTripsWithLLM(
     trips: IOptimizedTrip[],
     request: ISmartOptimizationRequest,
@@ -144,7 +137,6 @@ export class SmartOrderService {
   ): Promise<ISmartTrip[]> {
     this.logger.log(`Starting LLM analysis for ${trips.length} trips`);
 
-    // Process trips sequentially to avoid API rate limits and excessive concurrent requests
     const enhancedTrips: ISmartTrip[] = [];
 
     for (const [index, trip] of trips.entries()) {
@@ -171,7 +163,6 @@ export class SmartOrderService {
           error,
         );
 
-        // Provide fallback analysis if LLM fails
         enhancedTrips.push({
           ...trip,
           llmAnalysis: this.createFallbackAnalysis(trip),
@@ -183,9 +174,6 @@ export class SmartOrderService {
     return enhancedTrips;
   }
 
-  /**
-   * Analyze individual trip with Claude LLM
-   */
   private async analyzeTripWithLLM(
     trip: IOptimizedTrip,
     tripNumber: number,
@@ -193,7 +181,7 @@ export class SmartOrderService {
     request: ISmartOptimizationRequest,
     historicalContext?: IHistoricalContext,
   ): Promise<ILLMAnalysis> {
-    const TRIP_ANALYSIS_TIMEOUT = 45000; // 45 seconds timeout per trip analysis
+    const TRIP_ANALYSIS_TIMEOUT = 45000;
     const startTime = Date.now();
 
     try {
@@ -205,7 +193,6 @@ export class SmartOrderService {
         historicalContext,
       );
 
-      // Create timeout promise
       const timeoutPromise = new Promise<never>((_, reject) =>
         setTimeout(
           () =>
@@ -218,7 +205,6 @@ export class SmartOrderService {
         ),
       );
 
-      // Create the API call promise
       const apiCallPromise = this.anthropic.messages.create({
         model: 'claude-sonnet-4-5-20250929',
         max_tokens: 1000,
@@ -231,7 +217,6 @@ export class SmartOrderService {
         ],
       });
 
-      // Race between API call and timeout
       const response = await Promise.race([apiCallPromise, timeoutPromise]);
 
       const processingTime = Date.now() - startTime;
@@ -255,9 +240,6 @@ export class SmartOrderService {
     }
   }
 
-  /**
-   * Build prompt for trip analysis
-   */
   private async buildTripAnalysisPrompt(
     trip: IOptimizedTrip,
     tripNumber: number,
@@ -265,7 +247,6 @@ export class SmartOrderService {
     request: ISmartOptimizationRequest,
     historicalContext?: IHistoricalContext,
   ): Promise<string> {
-    // Get enhanced truck and destination information
     const truckSpecs = this.enhancedCalculator.getTruckSpecs(trip.truck._id);
     const addressSpecs = request.destinationAddressId
       ? await this.enhancedCalculator.getAddressSpecs(
@@ -273,7 +254,6 @@ export class SmartOrderService {
         )
       : undefined;
 
-    // Calculate efficiency metrics
     const efficiencyMetrics =
       this.enhancedCalculator.calculateEfficiencyMetrics(
         trip.truck,
@@ -342,9 +322,6 @@ Respond only with valid JSON. Be concise but thorough.`;
     return prompt;
   }
 
-  /**
-   * Generate overall analysis for all trips
-   */
   private async generateOverallAnalysis(
     trips: ISmartTrip[],
     request: ISmartOptimizationRequest,
@@ -354,7 +331,7 @@ Respond only with valid JSON. Be concise but thorough.`;
     potentialImprovements: string[];
     riskAssessment: string;
   }> {
-    const OVERALL_ANALYSIS_TIMEOUT = 30000; // 30 seconds timeout for overall analysis
+    const OVERALL_ANALYSIS_TIMEOUT = 30000;
     const startTime = Date.now();
 
     const prompt = this.buildOverallAnalysisPrompt(
@@ -364,7 +341,6 @@ Respond only with valid JSON. Be concise but thorough.`;
     );
 
     try {
-      // Create timeout promise
       const timeoutPromise = new Promise<never>((_, reject) =>
         setTimeout(
           () =>
@@ -377,7 +353,6 @@ Respond only with valid JSON. Be concise but thorough.`;
         ),
       );
 
-      // Create the API call promise
       const apiCallPromise = this.anthropic.messages.create({
         model: 'claude-sonnet-4-5-20250929',
         max_tokens: 800,
@@ -390,7 +365,6 @@ Respond only with valid JSON. Be concise but thorough.`;
         ],
       });
 
-      // Race between API call and timeout
       const response = await Promise.race([apiCallPromise, timeoutPromise]);
 
       const processingTime = Date.now() - startTime;
@@ -412,9 +386,6 @@ Respond only with valid JSON. Be concise but thorough.`;
     }
   }
 
-  /**
-   * Build prompt for overall analysis
-   */
   private buildOverallAnalysisPrompt(
     trips: ISmartTrip[],
     request: ISmartOptimizationRequest,
@@ -469,7 +440,6 @@ Provide strategic insights about this optimization plan. Be concise but actionab
       const cleanedResponse = response.replace(/```json\s*|\s*```/g, '').trim();
       const parsed: ILLMAnalysisRawResponse = JSON.parse(cleanedResponse);
 
-      // Type-safe parsing with proper validation
       const risks = Array.isArray(parsed.risks)
         ? parsed.risks.filter(
             (risk): risk is string => typeof risk === 'string',
@@ -510,11 +480,9 @@ Provide strategic insights about this optimization plan. Be concise but actionab
     riskAssessment: string;
   } {
     try {
-      // Clean the response by removing markdown code blocks if present
       const cleanedResponse = response.replace(/```json\s*|\s*```/g, '').trim();
       const parsed: IOverallAnalysisRawResponse = JSON.parse(cleanedResponse);
 
-      // Type-safe parsing with proper validation
       const potentialImprovements = Array.isArray(parsed.potentialImprovements)
         ? parsed.potentialImprovements.filter(
             (improvement): improvement is string =>

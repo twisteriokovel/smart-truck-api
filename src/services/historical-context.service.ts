@@ -8,8 +8,8 @@ import { Trip } from '../schemas/trip.schema';
 import { IOrderResponse } from '../models/order';
 
 interface IHistoricalTripData {
-  _id: string; // ObjectId from MongoDB
-  orderId: string; // ObjectId from MongoDB
+  _id: string;
+  orderId: string;
   actualFuel?: number;
   estimatedFuel: number;
   actualDuration?: number;
@@ -149,8 +149,8 @@ export class HistoricalContextService {
         status: 'done',
         createdAt: { $gte: sixMonthsAgo },
       })
-      .select('_id cargoWeight pallets.length createdAt') // Only select needed fields
-      .limit(30) // Reduced from 50 to 30 for better performance
+      .select('_id cargoWeight pallets.length createdAt')
+      .limit(30)
       .lean();
   }
 
@@ -165,7 +165,7 @@ export class HistoricalContextService {
       .select(
         'orderId actualFuel estimatedFuel actualDuration estimatedDuration palletIds notes truckId',
       )
-      .populate('truckId', 'maxWeight maxPallets') // Only populate needed truck fields
+      .populate('truckId', 'maxWeight maxPallets')
       .lean();
 
     return trips as unknown as IHistoricalTripData[];
@@ -180,7 +180,7 @@ export class HistoricalContextService {
   }> {
     if (trips.length === 0) {
       return {
-        averageFuelEfficiency: 35.0, // Default values
+        averageFuelEfficiency: 35.0,
         averageLoadUtilization: 75.0,
         onTimeDeliveryRate: 85.0,
       };
@@ -247,7 +247,6 @@ export class HistoricalContextService {
       orderTripCounts.set(orderId, (orderTripCounts.get(orderId) || 0) + 1);
     }
 
-    // Calculate average
     const tripCounts = Array.from(orderTripCounts.values());
     const average =
       tripCounts.length > 0

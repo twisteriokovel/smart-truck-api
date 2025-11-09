@@ -243,8 +243,8 @@ export class TripOptimizerService {
       trips.push({
         truckId: bin.truckId,
         truck: bin.truck,
-        pallets: bin.items, // Full pallet objects for FE display
-        palletIds: bin.items.map((pallet) => pallet.id), // Keep for backward compatibility
+        pallets: bin.items,
+        palletIds: bin.items.map((pallet) => pallet.id),
         estimatedWeight: totalWeight,
         estimatedPalletCount: palletCount,
         estimatedFuel,
@@ -253,7 +253,7 @@ export class TripOptimizerService {
         route: {
           startPoint: 'Warehouse',
           endPoint: addressSpec?.city || 'Destination',
-          estimatedDistance: estimatedDistance * 2, // Round trip
+          estimatedDistance: estimatedDistance * 2,
           estimatedTime: estimatedDuration,
         },
       });
